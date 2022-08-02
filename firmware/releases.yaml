@@ -1,0 +1,40 @@
+#-----------------------------------------------------------------------------
+# This file is part of the 'SPACE SMURF RFSOC'. It is subject to
+# the license terms in the LICENSE.txt file found in the top-level directory
+# of this distribution and at:
+#    https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
+# No part of the 'SPACE SMURF RFSOC', including this file, may be
+# copied, modified, propagated, or distributed except according to the terms
+# contained in the LICENSE.txt file.
+#-----------------------------------------------------------------------------
+
+GitBase: ..
+
+TopRoguePackage: simple_te0835_example
+
+RoguePackages:
+  - submodules/surf/python
+  - submodules/axi-soc-ultra-plus-core/python
+  - python     
+
+# RogueConfig:
+  # - ../software/config
+
+# RogueScripts:
+  # - ../software/scripts/devGui
+
+Targets:
+  SimpleTe0835Example:
+    ImageDir: targets/SimpleTe0835Example/images
+    Extensions:
+      - ltx
+      - xsa
+      - bit
+
+Releases:
+  all:
+    Primary: True
+    Targets:
+      - SimpleTe0835Example
+    Types:
+      - Rogue
