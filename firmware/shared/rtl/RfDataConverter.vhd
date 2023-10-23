@@ -3,11 +3,11 @@
 -------------------------------------------------------------------------------
 -- Description: RfDataConverter Module
 -------------------------------------------------------------------------------
--- This file is part of 'SPACE SMURF RFSOC'.
+-- This file is part of 'Simple-TE0835-Example'.
 -- It is subject to the license terms in the LICENSE.txt file found in the
 -- top-level directory of this distribution and at:
 --    https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
--- No part of 'SPACE SMURF RFSOC', including this file,
+-- No part of 'Simple-TE0835-Example', including this file,
 -- may be copied, modified, propagated, or distributed except according to
 -- the terms contained in the LICENSE.txt file.
 -------------------------------------------------------------------------------
@@ -33,8 +33,6 @@ entity RfDataConverter is
       AXIL_BASE_ADDR_G : slv(31 downto 0));
    port (
       -- RF DATA CONVERTER Ports
-      adcClkP         : in  sl;
-      adcClkN         : in  sl;
       adcP            : in  slv(7 downto 0);
       adcN            : in  slv(7 downto 0);
       dacClkP         : in  sl;
@@ -61,8 +59,6 @@ architecture mapping of RfDataConverter is
 
    component RfDataConverterIpCore
       port (
-         adc2_clk_p      : in  std_logic;
-         adc2_clk_n      : in  std_logic;
          clk_adc0        : out std_logic;
          clk_adc1        : out std_logic;
          clk_adc2        : out std_logic;
@@ -217,8 +213,6 @@ begin
    U_IpCore : RfDataConverterIpCore
       port map (
          -- Clock Ports
-         adc2_clk_p      => adcClkP,
-         adc2_clk_n      => adcClkN,
          clk_adc0        => refClk,
          clk_adc1        => open,
          clk_adc2        => open,

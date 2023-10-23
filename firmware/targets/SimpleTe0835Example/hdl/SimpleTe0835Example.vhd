@@ -3,11 +3,11 @@
 -------------------------------------------------------------------------------
 -- Description: Top Level Firmware Target
 -------------------------------------------------------------------------------
--- This file is part of 'axi-pcie-core'.
+-- This file is part of 'Simple-TE0835-Example'.
 -- It is subject to the license terms in the LICENSE.txt file found in the
 -- top-level directory of this distribution and at:
 --    https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
--- No part of 'axi-pcie-core', including this file,
+-- No part of 'Simple-TE0835-Example', including this file,
 -- may be copied, modified, propagated, or distributed except according to
 -- the terms contained in the LICENSE.txt file.
 -------------------------------------------------------------------------------
@@ -32,8 +32,6 @@ entity SimpleTe0835Example is
       BUILD_INFO_G : BuildInfoType);
    port (
       -- RF DATA CONVERTER Ports
-      adcClkP : in  sl;
-      adcClkN : in  sl;
       adcP    : in  slv(7 downto 0);
       adcN    : in  slv(7 downto 0);
       dacClkP : in  sl;
@@ -100,6 +98,9 @@ begin
          -- AUX Clock and Reset
          auxClk          => axilClk,
          auxRst          => axilRst,
+         -- DSP Clock and Reset Monitoring
+         dspClk          => dspClk,
+         dspRst          => dspRst,
          -- DMA Interfaces  (dmaClk domain)
          dmaClk          => dmaClk,
          dmaRst          => dmaRst,
@@ -149,8 +150,6 @@ begin
          AXIL_BASE_ADDR_G => AXIL_CONFIG_C(RFDC_INDEX_C).baseAddr)
       port map (
          -- RF DATA CONVERTER Ports
-         adcClkP         => adcClkP,
-         adcClkN         => adcClkN,
          adcP            => adcP,
          adcN            => adcN,
          dacClkP         => dacClkP,

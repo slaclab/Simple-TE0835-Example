@@ -3,11 +3,11 @@
 -------------------------------------------------------------------------------
 -- Description: Application Module
 -------------------------------------------------------------------------------
--- This file is part of 'SPACE SMURF RFSOC'.
+-- This file is part of 'Simple-TE0835-Example'.
 -- It is subject to the license terms in the LICENSE.txt file found in the
 -- top-level directory of this distribution and at:
 --    https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
--- No part of 'SPACE SMURF RFSOC', including this file,
+-- No part of 'Simple-TE0835-Example', including this file,
 -- may be copied, modified, propagated, or distributed except according to
 -- the terms contained in the LICENSE.txt file.
 -------------------------------------------------------------------------------
@@ -71,7 +71,7 @@ architecture mapping of Application is
    signal adc      : Slv256Array(7 downto 0) := (others => (others => '0'));
    signal dac      : Slv256Array(7 downto 0) := (others => (others => '0'));
    signal loopback : Slv256Array(7 downto 0) := (others => (others => '0'));
-   
+
 begin
 
    process(dspClk)
@@ -106,13 +106,15 @@ begin
 
    U_AppRingBuffer : entity axi_soc_ultra_plus_core.AppRingBuffer
       generic map (
-         TPD_G            => TPD_G,
-         EN_ADC_BUFF_G    => true,
-         EN_DAC_BUFF_G    => true,
-         NUM_ADC_CH_G     => NUM_ADC_CH_C,
-         NUM_DAC_CH_G     => NUM_DAC_CH_C,
-         RAM_ADDR_WIDTH_G => RAM_ADDR_WIDTH_C,
-         AXIL_BASE_ADDR_G => AXIL_CONFIG_C(RING_INDEX_C).baseAddr)
+         TPD_G                  => TPD_G,
+         EN_ADC_BUFF_G          => true,
+         EN_DAC_BUFF_G          => true,
+         NUM_ADC_CH_G           => NUM_ADC_CH_C,
+         NUM_DAC_CH_G           => NUM_DAC_CH_C,
+         ADC_SAMPLE_PER_CYCLE_G => SAMPLE_PER_CYCLE_C,
+         DAC_SAMPLE_PER_CYCLE_G => SAMPLE_PER_CYCLE_C,
+         RAM_ADDR_WIDTH_G       => RAM_ADDR_WIDTH_C,
+         AXIL_BASE_ADDR_G       => AXIL_CONFIG_C(RING_INDEX_C).baseAddr)
       port map (
          -- DMA Interface (dmaClk domain)
          dmaClk          => dmaClk,
@@ -122,8 +124,22 @@ begin
          -- ADC/DAC Interface (dspClk domain)
          dspClk          => dspClk,
          dspRst          => dspRst,
-         dspAdc          => adc(NUM_ADC_CH_C-1 downto 0),
-         dspDac          => dac(NUM_DAC_CH_C-1 downto 0),
+         dspAdc0         => adc(0),
+         dspAdc1         => adc(1),
+         dspAdc2         => adc(2),
+         dspAdc3         => adc(3),
+         dspAdc4         => adc(4),
+         dspAdc5         => adc(5),
+         dspAdc6         => adc(6),
+         dspAdc7         => adc(7),
+         dspDac0         => dac(0),
+         dspDac1         => dac(1),
+         dspDac2         => dac(2),
+         dspDac3         => dac(3),
+         dspDac4         => dac(4),
+         dspDac5         => dac(5),
+         dspDac6         => dac(6),
+         dspDac7         => dac(7),
          -- AXI-Lite Interface (axilClk domain)
          axilClk         => axilClk,
          axilRst         => axilRst,
@@ -137,14 +153,28 @@ begin
          TPD_G              => TPD_G,
          NUM_CH_G           => 8,
          RAM_ADDR_WIDTH_G   => RAM_ADDR_WIDTH_C,
-         SAMPLE_PER_CYCLE_G => 16,
+         SAMPLE_PER_CYCLE_G => SAMPLE_PER_CYCLE_C,
          AXIL_BASE_ADDR_G   => AXIL_CONFIG_C(DAC_SIG_INDEX_C).baseAddr)
       port map (
          -- DAC Interface (dspClk domain)
          dspClk          => dspClk,
          dspRst          => dspRst,
-         dspDacIn        => loopback,
-         dspDacOut       => dac,
+         dspDacIn0       => loopback(0),
+         dspDacIn1       => loopback(1),
+         dspDacIn2       => loopback(2),
+         dspDacIn3       => loopback(3),
+         dspDacIn4       => loopback(4),
+         dspDacIn5       => loopback(5),
+         dspDacIn6       => loopback(6),
+         dspDacIn7       => loopback(7),
+         dspDacOut0      => dac(0),
+         dspDacOut1      => dac(1),
+         dspDacOut2      => dac(2),
+         dspDacOut3      => dac(3),
+         dspDacOut4      => dac(4),
+         dspDacOut5      => dac(5),
+         dspDacOut6      => dac(6),
+         dspDacOut7      => dac(7),
          -- AXI-Lite Interface (axilClk domain)
          axilClk         => axilClk,
          axilRst         => axilRst,
