@@ -1,9 +1,9 @@
 #-----------------------------------------------------------------------------
-# This file is part of the 'SPACE SMURF RFSOC'. It is subject to
+# This file is part of the 'Simple-TE0835-Example'. It is subject to
 # the license terms in the LICENSE.txt file found in the top-level directory
 # of this distribution and at:
 #    https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
-# No part of the 'SPACE SMURF RFSOC', including this file, may be
+# No part of the 'Simple-TE0835-Example', including this file, may be
 # copied, modified, propagated, or distributed except according to the terms
 # contained in the LICENSE.txt file.
 #-----------------------------------------------------------------------------
@@ -11,10 +11,10 @@
 import time
 
 import rogue
-import rogue.hardware.axi
-import rogue.interfaces.memory
 import rogue.interfaces.stream as stream
 import rogue.utilities.fileio
+import rogue.hardware.axi
+import rogue.interfaces.memory
 
 import pyrogue as pr
 import pyrogue.protocols
@@ -23,22 +23,32 @@ import pyrogue.utilities.prbs
 
 import simple_te0835_example                 as rfsoc
 import axi_soc_ultra_plus_core.rfsoc_utility as rfsoc_utility
+import axi_soc_ultra_plus_core               as soc_core
 
-rogue.Version.minVersion('5.14.0')
+rogue.Version.minVersion('6.1.1')
 
 class Root(pr.Root):
     def __init__(self,
-                 ip          = '10.0.0.200', # ETH Host Name (or IP address)
-                 defaultFile = None,
-                 lmkConfig   = 'config/lmk/HexRegisterValues.txt',
-                 **kwargs):
-
-        # Pass custom value to parent via super function
+            ip          = '10.0.0.200', # ETH Host Name (or IP address)
+            top_level   = '',
+            defaultFile = '',
+            zmqSrvEn = True,  # Flag to include the ZMQ server
+            **kwargs):
         super().__init__(**kwargs)
 
+        #################################################################
+        if zmqSrvEn:
+            self.zmqServer = pyrogue.interfaces.ZmqServer(root=self, addr='*', port=0)
+            self.addInterface(self.zmqServer)
+
+        #################################################################
+
         # Local Variables
-        self.defaultFile = defaultFile
-        self.lmkConfig   = lmkConfig
+        self.top_level   = top_level
+        if self.top_level != '':
+            self.defaultFile = f'{top_level}/{defaultFile}'
+        else:
+            self.defaultFile = defaultFile
 
         # File writer
         self.dataWriter = pr.utilities.fileio.StreamWriter()
@@ -49,14 +59,16 @@ class Root(pr.Root):
         ##################################################################################
 
         if ip != None:
+            # Check if we can ping the device and TCP socket not open
+            soc_core.connectionTest(ip)
             # Start a TCP Bridge Client, Connect remote server at 'ethReg' ports 9000 & 9001.
-            self.tcpReg = rogue.interfaces.memory.TcpClient(ip,9000)
+            self.memMap = rogue.interfaces.memory.TcpClient(ip,9000)
         else:
-            self.tcpReg = rogue.hardware.axi.AxiMemMap('/dev/axi_memory_map')
+            self.memMap = rogue.hardware.axi.AxiMemMap('/dev/axi_memory_map')
 
         # Added the RFSoC HW device
-        self.add(rfsoc.TrenzTe0835(
-            memBase    = self.tcpReg,
+        self.add(rfsoc.RFSoC(
+            memBase    = self.memMap,
             offset     = 0x04_0000_0000, # Full 40-bit address space
             expand     = True,
         ))
@@ -70,8 +82,8 @@ class Root(pr.Root):
             self.ringBufferAdc = [stream.TcpClient(ip,10000+2*(i+0))  for i in range(8)]
             self.ringBufferDac = [stream.TcpClient(ip,10000+2*(i+16)) for i in range(8)]
         else:
-            self.ringBufferAdc = [rogue.hardware.axi.AxiStreamDma('/dev/axi_stream_dma_0', (i+0),  True) for i in range(8)]
-            self.ringBufferDac = [rogue.hardware.axi.AxiStreamDma('/dev/axi_stream_dma_0', (i+16), True) for i in range(8)]
+            self.ringBufferAdc = [rogue.hardware.axi.AxiStreamDma('/dev/axi_stream_dma_0', i,    True) for i in range(8)]
+            self.ringBufferDac = [rogue.hardware.axi.AxiStreamDma('/dev/axi_stream_dma_0', 16+i, True) for i in range(8)]
         self.adcRateDrop   = [stream.RateDrop(True,1.0) for i in range(8)]
         self.dacRateDrop   = [stream.RateDrop(True,1.0) for i in range(8)]
         self.adcProcessor  = [rfsoc_utility.RingBufferProcessor(name=f'AdcProcessor[{i}]',sampleRate=5.0E+9) for i in range(8)]
@@ -86,7 +98,7 @@ class Root(pr.Root):
             self.add(self.adcProcessor[i])
 
             # DAC Ring Buffer Path
-            self.ringBufferDac[i] >> self.dataWriter.getChannel(i+8)
+            self.ringBufferDac[i] >> self.dataWriter.getChannel(i+16)
             self.ringBufferDac[i] >> self.dacRateDrop[i] >> self.dacProcessor[i]
             self.add(self.dacProcessor[i])
 
@@ -95,40 +107,32 @@ class Root(pr.Root):
     def start(self,**kwargs):
         super(Root, self).start(**kwargs)
 
-        # # Useful pointers
-        # lmk      = self.XilinxZcu216.Hardware.Lmk
-        # i2cToSpi = self.XilinxZcu216.Hardware.I2cToSpi
+        # Useful pointers
+        dacSigGen = self.RFSoC.Application.DacSigGen
 
-        # # Set the SPI clock rate
-        # i2cToSpi.SpiClockRate.setDisp('115kHz')
+        # Update all SW remote registers
+        self.ReadAll()
 
-        # # Configure the LMK for 4-wire SPI
-        # lmk.LmkReg_0x0000.set(value=0x10) # 4-wire SPI
-        # lmk.LmkReg_0x015F.set(value=0x3B) # STATUS_LD1 = SPI readback
+        # Load the Default YAML file
+        print(f'Loading path={self.defaultFile} Default Configuration File...')
+        self.LoadConfig(self.defaultFile)
+        self.ReadAll()
 
-        # # Check for default file path
-        # if (self.defaultFile is not None) :
+        # Initialize the RF Data Converter
+        self.RFSoC.RfDataConverter.Init()
 
-            # # Load the Default YAML file
-            # print(f'Loading path={self.defaultFile} Default Configuration File...')
-            # self.LoadConfig(self.defaultFile)
+        # Wait for DSP Clock to be stable
+        while(self.RFSoC.AxiSocCore.AxiVersion.DspReset.get()):
+            time.sleep(0.01)
 
-            # # Load the LMK configuration from the TICS Pro software HEX export
-            # for i in range(2): # Seems like 1st time after power up that need to load twice
-                # lmk.enable.set(True)
-                # lmk.PwrDwnLmkChip()
-                # lmk.PwrUpLmkChip()
-                # lmk.LoadCodeLoaderHexFile(self.lmkConfig)
-                # lmk.Init()
-                # lmk.enable.set(False)
+        # Load the waveform data into DacSigGen
+        csvFile = dacSigGen.CsvFilePath.get()
+        if csvFile != '':
+            if self.top_level != '':
+                dacSigGen.CsvFilePath.set(f'{self.top_level}/{csvFile}')
+            dacSigGen.LoadCsvFile()
 
-            # # Reset the RF Data Converter
-            # self.XilinxZcu216.RfDataConverter.Reset.set(0x1)
-
-            # # Load the waveform data into DacSigGen
-            # self.XilinxZcu216.Application.DacSigGen.LoadCsvFile()
-
-            # Update all SW remote registers
-            self.ReadAll()
+        # Update all SW remote registers
+        self.ReadAll()
 
     ##################################################################################
