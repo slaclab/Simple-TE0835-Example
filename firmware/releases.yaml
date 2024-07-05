@@ -27,9 +27,7 @@ Targets:
   SimpleTe0835Example:
     ImageDir: targets/SimpleTe0835Example/images
     Extensions:
-      - ltx
-      - xsa
-      - bit
+      - petalinux.tar.gz
 
 Releases:
   all:
