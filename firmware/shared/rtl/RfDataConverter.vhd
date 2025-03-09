@@ -27,9 +27,6 @@ use work.AppPkg.all;
 library axi_soc_ultra_plus_core;
 use axi_soc_ultra_plus_core.AxiSocUltraPlusPkg.all;
 
-library unisim;
-use unisim.vcomponents.all;
-
 entity RfDataConverter is
    generic (
       TPD_G            : time := 1 ns;
@@ -405,21 +402,35 @@ begin
       end if;
    end process;
 
-   U_Gearbox : entity axi_soc_ultra_plus_core.Ssr12ToSsr16Gearbox
-      generic map (
-         TPD_G                => TPD_G,
-         FIFO_MEMORY_TYPE_G   => "block",
-         FIFO_ADDR_WIDTH_G    => 8,
-         INPUT_PIPE_STAGES_G  => 1,
-         OUTPUT_PIPE_STAGES_G => 1,
-         NUM_CH_G             => 8)
-      port map (
-         -- Slave Interface
-         wrClk  => rfdcClk,
-         wrData => adc,
-         -- Master Interface
-         rdClk  => dspClock,
-         rdRst  => dspReset,
-         rdData => dspAdc);
+   GEN_VEC :
+   for i in 7 downto 0 generate
+
+      --------------
+      -- ADC Gearbox
+      --------------
+      U_Gearbox_ADC : entity surf.AsyncGearbox
+         generic map (
+            TPD_G              => TPD_G,
+            SLAVE_WIDTH_G      => 192,
+            MASTER_WIDTH_G     => 256,
+            EN_EXT_CTRL_G      => false,
+            -- Async FIFO generics
+            FIFO_MEMORY_TYPE_G => "block",
+            FIFO_ADDR_WIDTH_G  => 8)
+         port map (
+            -- Slave Interface
+            slaveClk    => rfdcClk,
+            slaveRst    => rfdcRst,
+            slaveData   => adc(i),
+            slaveValid  => adcValid(i),
+            slaveReady  => open,
+            -- Master Interface
+            masterClk   => dspClock,
+            masterRst   => dspReset,
+            masterData  => dspAdc(i),
+            masterValid => open,
+            masterReady => '1');
+
+   end generate GEN_VEC;
 
 end mapping;
