@@ -408,6 +408,8 @@ begin
    U_Gearbox : entity axi_soc_ultra_plus_core.Ssr12ToSsr16Gearbox
       generic map (
          TPD_G                => TPD_G,
+         FIFO_MEMORY_TYPE_G   => "block",
+         FIFO_ADDR_WIDTH_G    => 8,
          INPUT_PIPE_STAGES_G  => 1,
          OUTPUT_PIPE_STAGES_G => 1,
          NUM_CH_G             => 8)
