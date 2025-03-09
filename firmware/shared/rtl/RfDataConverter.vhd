@@ -407,8 +407,10 @@ begin
 
    U_Gearbox : entity axi_soc_ultra_plus_core.Ssr12ToSsr16Gearbox
       generic map (
-         TPD_G    => TPD_G,
-         NUM_CH_G => 8)
+         TPD_G                => TPD_G,
+         INPUT_PIPE_STAGES_G  => 1,
+         OUTPUT_PIPE_STAGES_G => 1,
+         NUM_CH_G             => 8)
       port map (
          -- Slave Interface
          wrClk  => rfdcClk,
